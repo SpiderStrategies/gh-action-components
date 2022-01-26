@@ -1,0 +1,17 @@
+{
+  "name": "gh-action-components",
+  "version": "1.0.0",
+  "description": "Shared components for github actions",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SpiderStrategies/gh-action-components.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SpiderStrategies/gh-action-components/issues"
+  },
+  "homepage": "https://github.com/SpiderStrategies/gh-action-components#readme"
+}
