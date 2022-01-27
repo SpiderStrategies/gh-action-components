@@ -62,7 +62,7 @@ class BaseAction {
 			core.info(`Running: ${cmd}`)
 			const { stdout, stderr } = await exec(cmd);
 			if (stderr) {
-				core.warning(stderr)
+				core.info(stderr)
 			}
 			return stdout.toString().trim()
 		}
