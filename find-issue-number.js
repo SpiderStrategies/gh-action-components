@@ -2,14 +2,17 @@ const ISSUE_REGEX = /#(\d{3,})/g
 const BRANCH_ISSUE_REGEX = /(\d{3,})/g
 
 /**
+ * Common algorithm for finding an issue number:
+ * 1. From the commit messages
+ * 2. From the PR title
+ * 3. From the branch name
  *
- * @param {Octokit} octokit https://octokit.github.io/rest.js/v18#usage
- * @param {Object} repoOwnerParams passed on all octokit calls
+ * @param {BaseAction} action
  * @param {Object} pull_request from the event
  *
  * @returns {Promise<string>} The issue number
  */
-async function findIssueNumber({octokit, repoOwnerParams, pull_request}) {
+async function findIssueNumber({action, pull_request}) {
 
 	const { number: pull_number, title, head } = pull_request
 	const prBranch = head.ref
@@ -27,12 +30,11 @@ async function findIssueNumber({octokit, repoOwnerParams, pull_request}) {
 
 	let issueNumber
 	// First, Look at the commits
-	const opts = {
-		...repoOwnerParams,
-		pull_number
-	};
-	console.log(`Fetching commits for ${JSON.stringify(opts)}`)
-	const commits = await octokit.rest.pulls.listCommits(opts)
+	const commits = await action.execRest(
+		(api, opts) => api.pulls.listCommits(opts),
+		{ pull_number },
+		'Fetching commits for'
+	)
 	const commitMessages = commits.data.map(c => c.commit.message).reverse()
 	console.log('commit messages:', commitMessages)
 
