@@ -1,4 +1,6 @@
-const { exec } = require('child_process')
+const util = require('util')
+const exec = util.promisify(require('child_process').exec)
+
 
 const core = require('@actions/core')
 const github = require('@actions/github')
@@ -58,8 +60,11 @@ class BaseAction {
 			core.info(`dry run: ${cmd}`)
 		} else {
 			core.info(`Running: ${cmd}`)
-			const response = await exec(cmd)
-			return response.toString().trim()
+			const { stdout, stderr } = await exec(cmd);
+			if (stderr) {
+				core.warning(stderr)
+			}
+			return stdout.toString().trim()
 		}
 	}
 
