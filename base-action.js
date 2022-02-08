@@ -35,7 +35,7 @@ class BaseAction {
 	 */
 	async run() {
 		return this.runAction().catch(err => {
-			core.error(err)
+			core.error(`Caught error in runAction(): ${err}`)
 			core.setFailed(err)
 		})
 	}
