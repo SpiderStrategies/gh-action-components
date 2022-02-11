@@ -1,6 +1,6 @@
 const util = require('util')
 const exec = util.promisify(require('child_process').exec)
-
+const {writeFile} = require('fs/promises')
 
 const core = require('@actions/core')
 const github = require('@actions/github')
@@ -68,6 +68,12 @@ class BaseAction {
 		}
 	}
 
+	async execQuietly(cmd) {
+		try {
+			return await this.exec(cmd)
+		} catch(e) {}
+	}
+
 	/**
 	 * Make a GitHub API request using the octokit instance.
 	 * If the action did not specify a 'repo-token' input this will fail.
@@ -87,6 +93,32 @@ class BaseAction {
 		}
 	}
 
+	async commit(message) {
+		// Write to a file to avoid escaping nightmares
+		await writeFile('.commitmsg', message)
+		await this.exec(`git commit --file=.commitmsg`)
+		await this.exec(`git push`)
+	}
+
+	async createBranch(name, message, sha) {
+		await this.exec(`git checkout -b ${name} ${sha}`)
+		await this.exec(`git push --set-upstream origin ${name}`)
+	}
+
+	async deleteBranch(name) {
+		return this.execQuietly(`git push origin --delete ${name}`)
+	}
+
+	async logError(e, prefix = 'Error Detected') {
+		// the stack has the stderr output in it, so we don't want to log the full
+		// error object or we get buffers and redundant information
+		const { stack, status, stdout = {} } = e
+		core.warning(`${prefix}:\n`,
+			`status: ${status}\n`,
+			`stack: ${stack}\n`,
+			`stdout: ${stdout.toString()}`
+		)
+	}
 
 }
 

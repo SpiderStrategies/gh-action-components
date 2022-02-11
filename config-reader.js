@@ -38,23 +38,27 @@ function configReader(configFileLocation, options = {}) {
 
 	const branchNameByMilestoneNumber = {}
 	const branchByAlias = {}
-
-	Object.entries(config.branches).forEach(entry => {
+	const branches = config.branches
+	Object.entries(branches).forEach(entry => {
 		const [branchName, props] = entry;
 		const { alias, milestoneNumber } = props
 		branchNameByMilestoneNumber[milestoneNumber] = branchName
 		branchByAlias[alias] = { name: branchName, ...props }
 	})
 
-	const data = {
+	return {
+		// State
+		config,
+		branches,
 		mergeTargets: buildMergeTargets(config, options),
 		branchByAlias,
-		branchNameByMilestoneNumber
-	}
-
-	return {
-		config,
-		...data
+		branchNameByMilestoneNumber,
+		// Functions
+		/**
+		 * @param {String} branch the full branch name
+		 * @returns {String} the branch alias
+		 */
+		getBranchAlias: branch => config.branches[branch].alias,
 	}
 }
 
