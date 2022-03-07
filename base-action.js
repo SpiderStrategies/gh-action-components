@@ -2,19 +2,10 @@ const util = require('util')
 const exec = util.promisify(require('child_process').exec)
 const {writeFile} = require('fs/promises')
 
-const core = require('@actions/core')
 const github = require('@actions/github')
-
-const dryRun = core.getInput('dry-run');
 const context = github.context;
 const { repository } = context.payload
 
-// Setup Octokit
-let octokit
-const repoToken = core.getInput('repo-token')
-if (repoToken) {
-	octokit = github.getOctokit(repoToken)
-}
 // If the event has a repository extract the attributes
 let repoOwnerParams = {}
 if (repository) {
@@ -29,15 +20,35 @@ if (repository) {
  */
 class BaseAction {
 
+	constructor() {
+		// https://github.com/actions/toolkit/tree/main/packages/core#annotations
+		this.core = require('@actions/core')
+
+		// Setup Octokit
+		const repoToken = this.core.getInput('repo-token')
+		if (repoToken) {
+			this.octokit = github.getOctokit(repoToken)
+		}
+	}
+
 	/**
 	 * Runs the action
 	 * @returns {Promise<void>}
 	 */
 	async run() {
-		return this.runAction().catch(err => {
-			core.error(err)
-			core.setFailed(err)
-		})
+		return this.runAction().catch(async err => await this.onError(err))
+	}
+
+	/**
+	 * Subclasses can override this function to do additional actions when an
+	 * (uncaught) error occurs.
+	 *
+	 * @param err
+	 * @returns {Promise<void>}
+	 */
+	async onError(err) {
+		this.core.error(err)
+		this.core.setFailed(err)
 	}
 
 	/**
@@ -56,13 +67,13 @@ class BaseAction {
 	 * @returns {Promise<string>}
 	 */
 	async exec(cmd) {
-		if (dryRun) {
-			core.info(`dry run: ${cmd}`)
+		if (this.core.getInput('dry-run')) {
+			this.core.info(`dry run: ${cmd}`)
 		} else {
-			core.info(`Running: ${cmd}`)
+			this.core.info(`Running: ${cmd}`)
 			const { stdout, stderr } = await exec(cmd);
 			if (stderr) {
-				core.info(stderr)
+				this.core.info(stderr)
 			}
 			return stdout.toString().trim()
 		}
@@ -84,10 +95,10 @@ class BaseAction {
 	 * @returns {Promise<void>}
 	 */
 	async execRest(apiFn, opts, label = '') {
-		if (octokit && repoOwnerParams) {
+		if (this.octokit && repoOwnerParams) {
 			const allOptions = {...repoOwnerParams, ...opts}
-			core.debug(`Invoking octokit rest api ${label}: ${JSON.stringify(opts)}`)
-			return await apiFn(octokit.rest, allOptions)
+			this.core.debug(`Invoking octokit rest api ${label}: ${JSON.stringify(opts)}`)
+			return await apiFn(this.octokit.rest, allOptions)
 		} else {
 			throw new Error(`octokit is not initialized! Did the action specify the required 'repo-token'?`)
 		}
@@ -113,13 +124,12 @@ class BaseAction {
 		// the stack has the stderr output in it, so we don't want to log the full
 		// error object or we get buffers and redundant information
 		const { stack, status, stdout = {} } = e
-		core.warning(`${prefix}:\n`,
+		this.core.warning(`${prefix}:\n`,
 			`status: ${status}\n`,
 			`stack: ${stack}\n`,
 			`stdout: ${stdout.toString()}`
 		)
 	}
-
 }
 
 module.exports = BaseAction

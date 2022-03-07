@@ -1,0 +1,21 @@
+/**
+ * Mocks the GitHub Action core API so we can inspect it during tests.
+ *
+ * @param {Object} [options.inputs] Key/Value pairs
+ */
+function mockCore(options = {}) {
+	const mockCore = {
+		infoMsgs: [],
+		debugMsgs: [],
+		warningMsgs: [],
+		error: err => mockCore.errorArg = err,
+		setFailed: err => mockCore.failedArg = err,
+		info: msg => mockCore.infoMsgs.push(msg),
+		debug: msg => mockCore.debugMsgs.push(msg),
+		warning: msg => mockCore.warningMsgs.push(msg),
+		getInput: name => options.inputs && options.inputs[name]
+	}
+	return mockCore
+}
+
+module.exports = mockCore
