@@ -8,12 +8,14 @@ function mockCore(options = {}) {
 		infoMsgs: [],
 		debugMsgs: [],
 		warningMsgs: [],
+		outputs: {},
 		error: err => mockCore.errorArg = err,
 		setFailed: err => mockCore.failedArg = err,
 		info: msg => mockCore.infoMsgs.push(msg),
 		debug: msg => mockCore.debugMsgs.push(msg),
 		warning: msg => mockCore.warningMsgs.push(msg),
-		getInput: name => options.inputs && options.inputs[name]
+		getInput: name => options.inputs && options.inputs[name],
+		setOutput: (name, value) => mockCore.outputs[name] = value
 	}
 	return mockCore
 }
