@@ -111,7 +111,7 @@ class BaseAction {
 		await this.exec(`git push`)
 	}
 
-	async createBranch(name, message, sha) {
+	async createBranch(name, sha) {
 		await this.exec(`git checkout -b ${name} ${sha}`)
 		await this.exec(`git push --set-upstream origin ${name}`)
 	}
