@@ -104,10 +104,22 @@ class BaseAction {
 		}
 	}
 
-	async commit(message) {
+	/**
+	 *
+	 * @param {String} message
+	 * @param {Object} [author]
+	 * @param {String} [author.name]
+	 * @param {String} [author.email]
+	 * @returns {Promise<void>}
+	 */
+	async commit(message, author) {
 		// Write to a file to avoid escaping nightmares
 		await writeFile('.commitmsg', message)
-		await this.exec(`git commit --file=.commitmsg`)
+		let options = `--file=.commitmsg`
+		if (author) {
+			options += ` --author "${author.name} <${author.email}>"`
+		}
+		await this.exec(`git commit ${options}`)
 		await this.exec(`git push`)
 	}
 
