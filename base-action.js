@@ -92,7 +92,7 @@ class BaseAction {
 	 * @param {Function} apiFn (octokit.rest, opts) => {}
 	 * @param {Object} opts The options to apply to the api call in addition to the base options
 	 * @param {String} [label=''] Optionally label the operation in the log output
-	 * @returns {Promise<void>}
+	 * @returns {Promise}
 	 */
 	async execRest(apiFn, opts, label = '') {
 		if (this.octokit && repoOwnerParams) {
@@ -142,6 +142,15 @@ class BaseAction {
 			`stdout: ${stdout.toString()}`
 		)
 	}
+
+	// Doesn't look like the core groups work in conjunction with the private
+	// action (nick-invision/private-action-loader@v3)
+	startGroup(label) {
+		// this.core.startGroup(label);
+		this.core.info(`\n${label}\n===============================================\n`)
+	}
+
+	endGroup() {  /*this.core.endGroup()*/ }
 }
 
 module.exports = BaseAction
