@@ -21,6 +21,8 @@ if (repository) {
 class BaseAction {
 
 	constructor() {
+		// Any contextual state can be added here (e.g. list of commits for a PR)
+		this.context = {}
 		// https://github.com/actions/toolkit/tree/main/packages/core#annotations
 		this.core = require('@actions/core')
 
@@ -102,6 +104,24 @@ class BaseAction {
 		} else {
 			throw new Error(`octokit is not initialized! Did the action specify the required 'repo-token'?`)
 		}
+	}
+
+	/**
+	 * Fetches the commits for a prNumber and stores them in the action context
+	 *
+	 * @param prNumber
+	 * @returns {Promise<*>}
+	 */
+	async fetchCommits(prNumber) {
+		if (this.context.commits) {
+			return this.context.commits
+		}
+		this.context.commits = await this.execRest(
+			(api, opts) => api.pulls.listCommits(opts),
+			{ pull_number: prNumber },
+			'Fetching commits for'
+		)
+		return this.context.commits
 	}
 
 	/**

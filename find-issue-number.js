@@ -17,14 +17,8 @@ async function findIssueNumber({action, pullRequest}) {
 	const { number: pull_number, title, head } = pullRequest
 	const prBranch = head.ref
 
-	let issueNumber
 	// First, Look at the commits
-	const commits = await action.execRest(
-		(api, opts) => api.pulls.listCommits(opts),
-		{ pull_number },
-		'Fetching commits for'
-	)
-	issueNumber = extractFromCommits(commits)
+	let issueNumber = extractFromCommits(await action.fetchCommits(pull_number))
 
 	// Second, the PR title
 	if (!issueNumber) { search(title, 'PR title') }
