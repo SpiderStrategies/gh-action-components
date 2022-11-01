@@ -3,7 +3,7 @@ const exec = util.promisify(require('child_process').exec)
 const {writeFile} = require('fs/promises')
 
 const github = require('@actions/github')
-const context = github.context;
+const context = github.context
 const { repository } = context.payload
 
 // If the event has a repository extract the attributes
