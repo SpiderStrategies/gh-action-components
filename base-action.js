@@ -130,18 +130,14 @@ class BaseAction {
 	 * @param {Object} [author]
 	 * @param {String} [author.name]
 	 * @param {String} [author.email]
-	 * @param {String} [flags] any extra flags to add to the git command
 	 * @returns {Promise<void>}
 	 */
-	async commit(message, author, flags) {
+	async commit(message, author) {
 		// Write to a file to avoid escaping nightmares
 		await writeFile('.commitmsg', message)
 		let options = `--file=.commitmsg`
 		if (author) {
 			options += ` --author "${author.name} <${author.email}>"`
-		}
-		if (flags) {
-			options += ` ${flags}`
 		}
 		await this.exec(`git commit ${options}`)
 		await this.exec(`git push`)
