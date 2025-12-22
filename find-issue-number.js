@@ -1,5 +1,5 @@
-const ISSUE_REGEX = /#(\d{3,})/g
-const BRANCH_ISSUE_REGEX = /(\d{3,})/g
+const ISSUE_REGEX = /#(\d{3,})/
+const BRANCH_ISSUE_REGEX = /(\d{3,})/
 
 /**
  * Common algorithm for finding an issue number:

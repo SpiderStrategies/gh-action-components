@@ -22,4 +22,16 @@ tap.test(`extractFromCommits`, async t => {
 		t.equal(`48086`, actual)
 	})
 
+	t.test(`regex state does not pollute between calls`, async t => {
+		// First call - finds issue in title
+		const commits1 = buildCommits(['Merge conflicts #68875'])
+		const result1 = extractFromCommits(commits1)
+		t.equal(result1, '68875', 'first call should find issue')
+
+		// Second call - should also find issue (but fails due to regex state pollution)
+		const commits2 = buildCommits(['Merge conflicts #68895'])
+		const result2 = extractFromCommits(commits2)
+		t.equal(result2, '68895', 'second call should find issue without pollution')
+	})
+
 })
