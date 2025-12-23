@@ -7,24 +7,28 @@ const BRANCH_ISSUE_REGEX = /(\d{3,})/
  * 2. From the PR title
  * 3. From the branch name
  *
- * @param {BaseAction} action
+ * @param {Object} commits GitHub API response with commits
  * @param {Object} pullRequest from the event
  *
- * @returns {Promise<string>} The issue number
+ * @returns {string} The issue number
  */
-async function findIssueNumber({action, pullRequest}) {
+function findIssueNumber(commits, pullRequest) {
 
-	const { number: pull_number, title, head } = pullRequest
+	const { title, head } = pullRequest
 	const prBranch = head.ref
 
 	// First, Look at the commits
-	let issueNumber = extractFromCommits(await action.fetchCommits(pull_number))
+	let issueNumber = extractFromCommits(commits)
 
 	// Second, the PR title
-	if (!issueNumber) { search(title, 'PR title') }
+	if (!issueNumber) {
+		issueNumber = search(title, 'PR title')
+	}
 
 	// Finally, branch name
-	if (!issueNumber) { issueNumber = search(prBranch, 'branch name', BRANCH_ISSUE_REGEX) }
+	if (!issueNumber) {
+		issueNumber = search(prBranch, 'branch name', BRANCH_ISSUE_REGEX)
+	}
 
 	return issueNumber
 }
