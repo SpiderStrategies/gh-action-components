@@ -1,18 +1,7 @@
 const {writeFile} = require('fs/promises')
 const shellUtils = require('./shell-utils')
-
+const githubUtils = require('./github-utils')
 const github = require('@actions/github')
-const context = github.context
-const { repository } = context.payload
-
-// If the event has a repository extract the attributes
-let repoOwnerParams = {}
-if (repository) {
-	repoOwnerParams = {
-		owner: repository.owner.login,
-		repo: repository.name
-	}
-}
 
 /**
  * Common operations actions will invoke upon an instance of an action
@@ -25,10 +14,10 @@ class BaseAction {
 		// https://github.com/actions/toolkit/tree/main/packages/core#annotations
 		this.core = require('@actions/core')
 
-		// Setup Octokit
+		// Setup Octokit (optional - only if repo-token provided)
 		const repoToken = this.core.getInput('repo-token')
 		if (repoToken) {
-			this.octokit = github.getOctokit(repoToken)
+			this.octokit = githubUtils.getOctokit()
 		}
 	}
 
@@ -90,13 +79,17 @@ class BaseAction {
 	 * @returns {Promise}
 	 */
 	async execRest(apiFn, opts, label = '') {
-		if (this.octokit && repoOwnerParams) {
-			const allOptions = {...repoOwnerParams, ...opts}
-			this.core.debug(`Invoking octokit rest api ${label}: ${JSON.stringify(opts)}`)
-			return await apiFn(this.octokit.rest, allOptions)
-		} else {
+		if (!this.octokit) {
 			throw new Error(`octokit is not initialized! Did the action specify the required 'repo-token'?`)
 		}
+		const { repository } = github.context.payload
+		const allOptions = {
+			owner: repository.owner.login,
+			repo: repository.name,
+			...opts
+		}
+		this.core.debug(`Invoking octokit rest api ${label}: ${JSON.stringify(opts)}`)
+		return await apiFn(this.octokit.rest, allOptions)
 	}
 
 	/**
@@ -109,11 +102,7 @@ class BaseAction {
 		if (this.context.commits) {
 			return this.context.commits
 		}
-		this.context.commits = await this.execRest(
-			(api, opts) => api.pulls.listCommits(opts),
-			{ pull_number: prNumber },
-			'Fetching commits for'
-		)
+		this.context.commits = await githubUtils.fetchCommits(prNumber)
 		return this.context.commits
 	}
 
