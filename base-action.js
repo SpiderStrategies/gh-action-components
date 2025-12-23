@@ -1,6 +1,5 @@
-const util = require('util')
-const exec = util.promisify(require('child_process').exec)
 const {writeFile} = require('fs/promises')
+const shellUtils = require('./shell-utils')
 
 const github = require('@actions/github')
 const context = github.context
@@ -62,29 +61,23 @@ class BaseAction {
 	}
 
 	/**
-	 * Executes a command using FS.exec and performs logging and dry run logic.
+	 * Executes a command using shell-utils and performs logging and dry run logic.
 	 *
 	 * @param cmd
-	 *
 	 * @returns {Promise<string>}
 	 */
 	async exec(cmd) {
-		if (this.core.getInput('dry-run')) {
-			this.core.info(`dry run: ${cmd}`)
-		} else {
-			this.core.info(`Running: ${cmd}`)
-			const { stdout, stderr } = await exec(cmd);
-			if (stderr) {
-				this.core.info(stderr)
-			}
-			return stdout.toString().trim()
-		}
+		return shellUtils.exec(this.core, cmd)
 	}
 
+	/**
+	 * Executes a command, suppressing any errors.
+	 *
+	 * @param cmd
+	 * @returns {Promise<string|undefined>}
+	 */
 	async execQuietly(cmd) {
-		try {
-			return await this.exec(cmd)
-		} catch(e) {}
+		return shellUtils.execQuietly(this.core, cmd)
 	}
 
 	/**
