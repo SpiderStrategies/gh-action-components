@@ -15,7 +15,9 @@ function mockCore(options = {}) {
 		debug: msg => mockCore.debugMsgs.push(msg),
 		warning: msg => mockCore.warningMsgs.push(msg),
 		getInput: name => options.inputs && options.inputs[name],
-		setOutput: (name, value) => mockCore.outputs[name] = value
+		setOutput: (name, value) => mockCore.outputs[name] = value,
+		startGroup: label => mockCore.infoMsgs.push(`\n${label}\n===============================================\n`),
+		endGroup: () => {}
 	}
 	return mockCore
 }
