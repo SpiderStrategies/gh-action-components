@@ -1,24 +1,35 @@
-const {writeFile} = require('fs/promises')
-const shellUtils = require('./shell-utils')
-const githubUtils = require('./github-utils')
-const github = require('@actions/github')
+const Shell = require('./shell')
+const GitHubClient = require('./github-client')
+const Git = require('./git')
 
 /**
- * Common operations actions will invoke upon an instance of an action
+ * Common operations actions will invoke upon an instance of an action.
+ *
+ * This class provides a template method pattern (run/runAction/onError)
+ * and convenience methods for git operations.
+ *
+ * New code should prefer using Shell, GitHubClient, and Git directly for
+ * cleaner dependency injection. BaseAction is maintained for backward
+ * compatibility with existing actions.
  */
 class BaseAction {
 
 	constructor() {
 		// Any contextual state can be added here (e.g. list of commits for a PR)
 		this.context = {}
-		// https://github.com/actions/toolkit/tree/main/packages/core#annotations
+
+		// Core is the foundation - logging and inputs
 		this.core = require('@actions/core')
 
-		// Setup Octokit (optional - only if repo-token provided)
-		const repoToken = this.core.getInput('repo-token')
-		if (repoToken) {
-			this.octokit = githubUtils.getOctokit()
-		}
+		// Create component instances
+		this.shell = new Shell(this.core)
+		this.gh = new GitHubClient()
+		this.git = new Git(this.shell)
+
+		// Expose octokit for backward compatibility (lazy - accessed via gh)
+		Object.defineProperty(this, 'octokit', {
+			get: () => this.gh.octokit
+		})
 	}
 
 	/**
@@ -50,13 +61,13 @@ class BaseAction {
 	}
 
 	/**
-	 * Executes a command using shell-utils and performs logging and dry run logic.
+	 * Executes a command using shell and performs logging and dry run logic.
 	 *
 	 * @param cmd
 	 * @returns {Promise<string>}
 	 */
 	async exec(cmd) {
-		return shellUtils.exec(this.core, cmd)
+		return this.shell.exec(cmd)
 	}
 
 	/**
@@ -66,7 +77,7 @@ class BaseAction {
 	 * @returns {Promise<string|undefined>}
 	 */
 	async execQuietly(cmd) {
-		return shellUtils.execQuietly(this.core, cmd)
+		return this.shell.execQuietly(cmd)
 	}
 
 	/**
@@ -80,14 +91,9 @@ class BaseAction {
 	 */
 	async execRest(apiFn, opts, label = '') {
 		if (!this.octokit) {
-			throw new Error(`octokit is not initialized! Did the action specify the required 'repo-token'?`)
+			throw new Error('octokit is not initialized! Did the action specify the required \'repo-token\'?')
 		}
-		const { repository } = github.context.payload
-		const allOptions = {
-			owner: repository.owner.login,
-			repo: repository.name,
-			...opts
-		}
+		const allOptions = { ...this.gh.repo, ...opts }
 		this.core.debug(`Invoking octokit rest api ${label}: ${JSON.stringify(opts)}`)
 		return await apiFn(this.octokit.rest, allOptions)
 	}
@@ -102,7 +108,7 @@ class BaseAction {
 		if (this.context.commits) {
 			return this.context.commits
 		}
-		this.context.commits = await githubUtils.fetchCommits(prNumber)
+		this.context.commits = await this.gh.fetchCommits(prNumber)
 		return this.context.commits
 	}
 
@@ -115,23 +121,15 @@ class BaseAction {
 	 * @returns {Promise<void>}
 	 */
 	async commit(message, author) {
-		// Write to a file to avoid escaping nightmares
-		await writeFile('.commitmsg', message)
-		let options = `--file=.commitmsg`
-		if (author) {
-			options += ` --author "${author.name} <${author.email}>"`
-		}
-		await this.exec(`git commit ${options}`)
-		await this.exec(`git push`)
+		return this.git.commit(message, author)
 	}
 
 	async createBranch(name, sha) {
-		await this.exec(`git checkout -b ${name} ${sha}`)
-		await this.exec(`git push --set-upstream origin ${name}`)
+		return this.git.createBranch(name, sha)
 	}
 
 	async deleteBranch(name) {
-		return this.execQuietly(`git push origin --delete ${name}`)
+		return this.git.deleteBranch(name)
 	}
 
 	async logError(e, prefix = 'Error Detected') {
