@@ -20,5 +20,15 @@
   },
   "devDependencies": {
     "tap": "^15.1.6"
+  },
+  "tap": {
+    "coverage-report": [
+      "text"
+    ],
+    "check-coverage": true,
+    "lines": 75,
+    "statements": 75,
+    "functions": 65,
+    "branches": 70
   }
 }
