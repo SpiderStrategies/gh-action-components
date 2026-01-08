@@ -186,3 +186,35 @@ tap.test('configureIdentity', async t => {
 	t.ok(execCalls.find(c => c === 'git config user.name "Test User"'), 'should set name')
 })
 
+tap.test('push', async t => {
+
+	t.test('pushes with arguments', async t => {
+		const execCalls = []
+		const core = mockCore({})
+		const shell = new Shell(core)
+		shell.exec = async (cmd) => {
+			execCalls.push(cmd)
+			return ''
+		}
+
+		const git = new Git(shell)
+		await git.push('--force origin my-branch')
+
+		t.ok(execCalls.find(c => c === 'git push --force origin my-branch'), 'should push with arguments')
+	})
+
+	t.test('pushes without arguments', async t => {
+		const execCalls = []
+		const core = mockCore({})
+		const shell = new Shell(core)
+		shell.exec = async (cmd) => {
+			execCalls.push(cmd)
+			return ''
+		}
+
+		const git = new Git(shell)
+		await git.push()
+
+		t.ok(execCalls.find(c => c === 'git push'), 'should push without arguments')
+	})
+})
